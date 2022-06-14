@@ -135,16 +135,10 @@ class AppDialog(QtGui.QWidget):
         tankName = sg.find_one('Project', [['name', 'is', str(projectName)]], ['tank_name'])['tank_name']
 
         self.ui.packageButton.clicked.connect(self.startPackaging)
+
+        self.ui.outputDialogBtn.clicked.connect(self.selectDirDialog)
         
         self.playlistPackager = copy_from_playlist.PlaylistPacker(sg, projectName, localStorage)
-
-        outputPath = self.ui.outputDialogBtn.clicked.connect(self.selectDirDialog)
-
-        # project_id = 91
-        # tk = sgtk.sgtk_from_entity("Project", project_id)
-
-        # self._apiHandel = sgtk.find('LocalStorage', [], ['windows_path'])[0]['windows_path']
-
 
     def addPlaylist(self):
         playlistName = self.ui.playlistInput.text()
@@ -154,7 +148,7 @@ class AppDialog(QtGui.QWidget):
         playlistName = self.ui.playlistInput.text()
         self.ui.context.setText(playlistName)
         compress = self.ui.compress.isChecked()
-        self.playlistPackager.packagePlaylists([playlistName], compress)
+        self.playlistPackager.packagePlaylists([playlistName], compress, self.ui.outputPathText.text())
 
     def selectDirDialog(self):
         selectedDir = QtGui.QFileDialog.getExistingDirectory(

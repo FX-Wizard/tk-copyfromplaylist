@@ -41,7 +41,7 @@ class PlaylistPacker():
             return 'linux'
 
 
-    def copyVersionsFromPlaylist(self, playlistName):
+    def copyVersionsFromPlaylist(self, playlistName, outputDir):
         self.log('### Copying from playlist: %s' % playlistName)
         # Get playlist
         try:
@@ -73,10 +73,10 @@ class PlaylistPacker():
                 image = item['version.Version.sg_uploaded_movie']
                 urlList.append(image)
         
-        today = time.strftime('%Y%m%d')
-        projectDir = os.path.join(self.getProjectPath(), 'IO', 'Out')
+        now = time.strftime('%Y%m%d-%H%M')
+        projectDir = os.path.join(self.getProjectPath(), 'IO', 'Out') if outputDir == "" else outputDir
         
-        outDir = os.path.join(projectDir, today)
+        outDir = os.path.join(projectDir, now)
         if not os.path.exists(outDir):
             os.makedirs(outDir)
         
@@ -124,14 +124,14 @@ class PlaylistPacker():
         print(msg)
 
 
-    def packagePlaylists(self, listOfPlaylists, compress):
+    def packagePlaylists(self, listOfPlaylists, compress, outputDir):
         '''
         Parameters:
         listOfPlaylists (list): list of shotgun playlists
         compress (bool): compress in zip file
         '''
         for playlist in listOfPlaylists:
-            run = self.copyVersionsFromPlaylist(playlist)
+            run = self.copyVersionsFromPlaylist(playlist, outputDir)
 
             if run['success']:
                 if compress:
