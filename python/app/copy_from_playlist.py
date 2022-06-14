@@ -1,16 +1,15 @@
+import imp
 import os
 import time
 import shutil
 import ssl
-import urllib2
+from urllib.request import urlopen
 import platform
 
 import sgtk
 
-
 # standard toolkit logger
 logger = sgtk.platform.get_logger(__name__)
-
 
 class PlaylistPacker():
     '''
@@ -18,24 +17,16 @@ class PlaylistPacker():
     shotgun : shotgun api instance
     projectName (str): name of project
     '''
-    def __init__(self, shotgun, projectName, msgCallback=None):
+    def __init__(self, shotgun, projectName, localStorage, msgCallback=None):
         
         self.sg = shotgun
         self.projectName = projectName
+        self.localStorage = localStorage
         self.msgCallback = msgCallback
 
     def getProjectPath(self):
-        # Returns the file path to the project based on project name
-        system =  platform.system()
-        if system == 'Windows':
-            localStorage = self.sg.find('LocalStorage', [], ['windows_path'])[0]['windows_path']
-        elif system == 'Darwin':
-            localStorage = self.sg.find('LocalStorage', [], ['mac_path'])[0]['mac_path']
-        else:
-            localStorage = self.sg.find('LocalStorage', [], ['linux_path'])[0]['linux_path']
-        
-        tankName = self.sg.find('Project', [['name', 'is', self.projectName]], ['tank_name'])[0]['tank_name']
-        projectPath = os.path.join(localStorage, tankName)
+        tankName = self.sg.find_one('Project', [['name', 'is', self.projectName]], ['tank_name'])['tank_name']
+        projectPath = os.path.join(self.localStorage, tankName)
         self.log('PROJECT PATH: {}'.format(projectPath))
         return projectPath
 
@@ -54,7 +45,7 @@ class PlaylistPacker():
         self.log('### Copying from playlist: %s' % playlistName)
         # Get playlist
         try:
-            playlistId = self.sg.find('Playlist', [['code', 'is', playlistName]], ['id'])[0]['id']
+            playlistId = self.sg.find_one('Playlist', [['code', 'is', playlistName]], ['id'])['id']
         except:
             self.log('CAN NOT FIND PLAYLIST', error=1)
 
@@ -87,11 +78,11 @@ class PlaylistPacker():
         
         outDir = os.path.join(projectDir, today)
         if not os.path.exists(outDir):
-            os.mkdir(outDir)
+            os.makedirs(outDir)
         
         outDir = os.path.join(outDir, playlistName)
         if not os.path.exists(outDir):
-            os.mkdir(outDir)
+            os.makedirs(outDir)
 
         success = True
         
@@ -111,7 +102,7 @@ class PlaylistPacker():
             self.log('Downloading: {}'.format(item['name']))
             try:
                 # urllib.request.urlretrieve(item['url'], filePath) # python 3 way
-                request = urllib2.urlopen(item['url'])
+                request = urlopen(item['url'])
                 with open(filePath, 'wb') as output:
                     output.write(request.read())
             except Exception as error:
