@@ -13,6 +13,7 @@ import os
 import sys
 import threading
 from . import copy_from_playlist
+from pathlib import Path
 
 # by importing QT from sgtk rather than directly, we ensure that
 # the code will be compatible with both PySide and PyQt.
@@ -129,21 +130,15 @@ class AppDialog(QtGui.QWidget):
         projectName = str(self._app.context).replace("Project ", "")
         self.ui.context.setText(projectName)
 
-        localStorage = sg.find('LocalStorage', [], ['windows_path'])[0]['windows_path']
+        localStorage = Path(self._app.sgtk.project_path).anchor.replace("\\","/")
 
-        tankName = sg.find('Project', [['name', 'is', str(projectName)]], ['tank_name'])[0]['tank_name']
+        tankName = sg.find_one('Project', [['name', 'is', str(projectName)]], ['tank_name'])['tank_name']
 
         self.ui.packageButton.clicked.connect(self.startPackaging)
+
+        self.ui.outputDialogBtn.clicked.connect(self.selectDirDialog)
         
-        self.playlistPackager = copy_from_playlist.PlaylistPacker(sg, projectName)
-
-        outputPath = self.ui.outputDialogBtn.clicked.connect(self.selectDirDialog)
-
-        # project_id = 91
-        # tk = sgtk.sgtk_from_entity("Project", project_id)
-
-        # self._apiHandel = sgtk.find('LocalStorage', [], ['windows_path'])[0]['windows_path']
-
+        self.playlistPackager = copy_from_playlist.PlaylistPacker(sg, projectName, localStorage)
 
     def addPlaylist(self):
         playlistName = self.ui.playlistInput.text()
@@ -152,8 +147,8 @@ class AppDialog(QtGui.QWidget):
     def startPackaging(self):
         playlistName = self.ui.playlistInput.text()
         self.ui.context.setText(playlistName)
-        compress = self.compress.isChecked()
-        self.playlistPackager.packagePlaylists([playlistName], compress)
+        compress = self.ui.compress.isChecked()
+        self.playlistPackager.packagePlaylists([playlistName], compress, self.ui.outputPathText.text())
 
     def selectDirDialog(self):
         selectedDir = QtGui.QFileDialog.getExistingDirectory(
