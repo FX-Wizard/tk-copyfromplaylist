@@ -58,8 +58,8 @@ class AppDialog(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
 
         # now load in the UI that was created in the UI designer
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
+        # self.ui = Ui_Dialog()
+        # Set up UI
 
         # most of the useful accessors are available through the Application class instance
         # it is often handy to keep a reference to this. You can get it via the following method:
@@ -77,78 +77,102 @@ class AppDialog(QtGui.QWidget):
         # - An Sgtk API instance, via self._app.sgtk
 
         # Shotgun API instance
-        sg = self._app.shotgun
+        self.sg = self._app.shotgun
 
-        # # create search widget
-        # search_widget = global_search_widget.GlobalSearchWidget(self)
-        # # give the search widget a handle on the task manager
-        # search_widget.set_bg_task_manager(self._bg_task_manager)
-        # # set the entity types to search through (this is also the default dict)
-        # search_widget.set_searchable_entity_types(
-        #     {
-        #         "Asset": [],
-        #         "Shot": [],
-        #         "Task": [],
-        #         # only active users
-        #         "ClientUser": [["sg_status_list", "is", "act"]],
-        #         "ApiUser": [],
-        #         "Version": [],
-        #         "PublishedFile": [],
-        #     }
-        # )
+        self.projectName = str(self._app.context).replace("Project ", "")
+        # self.ui.context.setText(self.projectName)
 
-        # # display some instructions
-        # info_lbl = QtGui.QLabel(
-        #     "Click in the widget and type to search for Shotgun entities. You "
-        #     "will need to type at least 3 characters before the search begins."
-        # )
+        self.localStorage = Path(self._app.sgtk.project_path).anchor.replace("\\", "/")
 
-        # # create a label to show when an entity is activated
-        # self._activated_label = QtGui.QLabel()
-        # self._activated_label.setWordWrap(True)
-        # self._activated_label.setStyleSheet(
-        #     """
-        #     QLabel {
-        #         color: #18A7E3;
-        #     }
-        #     """
-        # )
+        self.playlistPackager = copy_from_playlist.PlaylistPacker(self.sg, self.projectName, self.localStorage)
+        self.ui = self.playlistPackager.ui
+        self.ui.setupUi(self)
 
-        # # lay out the UI
-        # layout = QtGui.QVBoxLayout(self)
-        # layout.setSpacing(16)
-        # layout.addStretch()
-        # layout.addWidget(info_lbl)
-        # layout.addWidget(search_widget)
-        # layout.addWidget(self._activated_label)
-        # layout.addStretch()
+        self.playlistInput = self.ui.playlistInput
+        self.playlistnames = []
+        self.playlistSelection = self.ui.playlistSelection
+        self.getPlaylists()
+        self.populate_playlist()
+        self.playlistCount = len(self.playlistnames)
+        self.currentPlaylist = None
 
-        # # connect the entity activated singal
-        # search_widget.entity_activated.connect(self._on_entity_activated)
-
-        # Set up UI
-        projectName = str(self._app.context).replace("Project ", "")
-        self.ui.context.setText(projectName)
-
-        localStorage = Path(self._app.sgtk.project_path).anchor.replace("\\","/")
-
-        tankName = sg.find_one('Project', [['name', 'is', str(projectName)]], ['tank_name'])['tank_name']
-
+        self.playlistSelection.clicked.connect(self.setPlaylist)
+        self.playlistInput.textChanged.connect(self.searchPlaylist)
         self.ui.packageButton.clicked.connect(self.startPackaging)
 
         self.ui.outputDialogBtn.clicked.connect(self.selectDirDialog)
-        
-        self.playlistPackager = copy_from_playlist.PlaylistPacker(sg, projectName, localStorage)
+        #self.setDefaultPath()
+
+    def getProjectPath(self):
+        tankName = self.sg.find_one('Project', [['name', 'is', self.projectName]], ['tank_name'])['tank_name']
+        projectPath = os.path.join(self.localStorage, tankName)
+        self.log('PROJECT PATH: {}'.format(projectPath))
+        return projectPath
+
+    def setDefaultPath(self):
+        projectDir = os.path.join(self.getProjectPath(), 'MyPlaylists')
+        self.ui.outputPathText.setText(projectDir)
+
+    def setPlaylist(self):
+        self.currentPlaylist = self.playlistSelection.currentItem().text()
+        self.ui.selectedPlaylistInput.setText(self.currentPlaylist)
+
+    def searchPlaylist(self):
+        self.playlistSelection.clear()
+        prefix = self.ui.playlistInput.text()
+        i = self.binary_search(self.playlistnames, prefix)
+
+        for index in range(i, self.playlistCount):
+            if self.playlistnames[index].startswith(prefix):
+                self.playlistSelection.addItem(self.playlistnames[index])
+            else:
+                break
+
+    def binary_search(self, array, target):
+        lo = 0
+        hi = len(array)
+
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if array[mid] < target:
+                lo = mid + 1
+            else:
+                hi = mid
+        return lo
+
+    def getPlaylists(self):
+        """
+        Get the playlists
+        """
+        self.playlists = self.sg.find("Playlist", [['project.Project.name', 'is', self.projectName]], ['code'])
+        #self.log('### playlistids: %s' % self.playlists)
+
+        for playlist in self.playlists:
+            if playlist and playlist['code']:
+                self.playlistnames.append(playlist["code"])
+        self.playlistnames.sort()
+        #self.log('### playlistnames: %s' % self.playlistnames)
+
+    def populate_playlist(self):
+        """
+        Populate the playlist
+        """
+        playlistSelection = self.playlistSelection
+        playlistSelection.clear()
+        for playlist in self.playlistnames:
+            playlistSelection.addItem(playlist)
 
     def addPlaylist(self):
         playlistName = self.ui.playlistInput.text()
 
-
     def startPackaging(self):
-        playlistName = self.ui.playlistInput.text()
-        self.ui.context.setText(playlistName)
-        compress = self.ui.compress.isChecked()
-        self.playlistPackager.packagePlaylists([playlistName], compress, self.ui.outputPathText.text())
+        if self.currentPlaylist:
+            playlistName = self.currentPlaylist
+            compress = self.ui.compress.isChecked()
+            openFolder = self.ui.destinationFolder.isChecked()
+            self.playlistPackager.packagePlaylists([playlistName], openFolder, compress, self.ui.outputPathText.text())
+        else:
+            self.log('No playlist is selected', error=1)
 
     def selectDirDialog(self):
         selectedDir = QtGui.QFileDialog.getExistingDirectory(
@@ -159,6 +183,15 @@ class AppDialog(QtGui.QWidget):
             )
         self.ui.outputPathText.setText(selectedDir)
         return selectedDir
+
+    def log(self, msg, error=0):
+        if logger:
+            if error:
+                logger.warn(msg)
+            else:
+                logger.info(msg)
+
+        print(msg)
 
     # def destroy(self):
     #     """Clean up the object when deleted."""
