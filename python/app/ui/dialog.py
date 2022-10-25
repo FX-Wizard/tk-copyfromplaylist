@@ -6,88 +6,174 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from tank.platform.qt import QtCore, QtGui
+from tank.platform.qt5 import QtWidgets
+#from qgis.PyQt.QtWidgets import QVBoxLayout
+from . import separator
+
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
+        app = QtWidgets.QApplication.instance()
+        app.processEvents()
+
         Dialog.setObjectName("Dialog")
-        Dialog.resize(431, 392)
+        #Dialog.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        #Dialog.resize(431, 392)
+        Dialog.resize(489, 792)
         self.verticalLayout = QtGui.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
+        self.verticalLayout.layout().setContentsMargins(15, 20, 15, 10)
 
-        self.horizontalLayout = QtGui.QHBoxLayout(Dialog)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.verticalLayout.addLayout(self.horizontalLayout)
-
-        # self.logo_example = QtGui.QLabel(Dialog)
-        # self.logo_example.setText("")
-        # self.logo_example.setPixmap(QtGui.QPixmap(":/res/sg_logo.png"))
-        # self.logo_example.setObjectName("logo_example")
-        # self.horizontalLayout.addWidget(self.logo_example)
-        self.context = QtGui.QLabel(Dialog)
-        # sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        # sizePolicy.setHorizontalStretch(0)
-        # sizePolicy.setVerticalStretch(0)
-        # sizePolicy.setHeightForWidth(self.context.sizePolicy().hasHeightForWidth())
-        # self.context.setSizePolicy(sizePolicy)
-        # self.context.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
-        self.context.setObjectName("context")
-        self.horizontalLayout.addWidget(self.context)
-
-        # playlist input
-        self.inputLabel = QtGui.QLabel(Dialog)
-        self.inputLabel.setObjectName("context")
-        self.inputLabel.setText("Enter playlist name")
-        self.verticalLayout.addWidget(self.inputLabel)
-        # playlist input section
-        self.inputLayout = QtGui.QHBoxLayout(Dialog)
+        # Search Layout
+        self.inputLayout = QtGui.QVBoxLayout(Dialog)
         self.inputLayout.setObjectName("inputLayout")
-        self.verticalLayout.addLayout(self.inputLayout)
-        self.playlistInput = QtGui.QLineEdit()
+
+        self.searchLabel = QtGui.QLabel(Dialog)
+        self.searchLabel.setObjectName("context")
+        self.searchLabel.setText("Search")
+
+        self.playlistInput = QtGui.QLineEdit(Dialog)
         self.playlistInput.setPlaceholderText("Playlist name...")
+        self.playlistInput.setToolTip('Enter the first few characters of query playlist name (case sensitive)')
+
+        self.inputLayout.addWidget(self.searchLabel)
         self.inputLayout.addWidget(self.playlistInput)
-        self.addPlaylistBtn = QtGui.QPushButton()
-        self.addPlaylistBtn.setText("+")
-        self.inputLayout.addWidget(self.addPlaylistBtn)
+        self.verticalLayout.addLayout(self.inputLayout)
 
-        # options
-        self.optionsLabel = QtGui.QLabel()
-        self.optionsLabel.setText("Advanced Options")
-        self.verticalLayout.addWidget(self.optionsLabel)
+        # Playlists Layout
+        self.playlistLayout = QtGui.QVBoxLayout(Dialog)
+        #self.playlistLayout.layout().setContentsMargins(0, 5, 0, 30)
+        self.playlistLabel = QtGui.QLabel(Dialog)
+        self.playlistLabel.setText("Playlists")
 
-        self.useCustomPath = QtGui.QCheckBox()
-        self.useCustomPath.setText("Save files to custom path")
-        self.useCustomPath.setChecked(False)
-        self.verticalLayout.addWidget(self.useCustomPath)
+        self.playlistSelection = QtWidgets.QListWidget()
+        self.playlistSelection.setToolTip('Select a playlist')
 
-        self.outputLayout = QtGui.QHBoxLayout(Dialog)
+        self.playlistLayout.addWidget(self.playlistLabel)
+        self.playlistLayout.addWidget(self.playlistSelection)
+        self.verticalLayout.addLayout(self.playlistLayout)
+
+        # Selected Playlist Layout
+        self.selectedPlaylistLayout = QtGui.QVBoxLayout(Dialog)
+        self.selectedPlaylistLayout.layout().setContentsMargins(0, 0, 0, 20)
+        self.selectedPlaylistLabel = QtGui.QLabel(Dialog)
+        self.selectedPlaylistLabel.setText("Selected Playlist")
+
+        self.selectedPlaylistInput = QtGui.QLineEdit(Dialog)
+        self.selectedPlaylistInput.setPlaceholderText("Selected playlist name...")
+        self.selectedPlaylistInput.setToolTip('Display the playlist selected above')
+
+        self.playlistLayout.addWidget(self.selectedPlaylistLabel)
+        self.playlistLayout.addWidget(self.selectedPlaylistInput)
+        self.verticalLayout.addLayout(self.selectedPlaylistLayout)
+
+        #self_playlist_separator = separator.Separator()
+        #self.verticalLayout.addWidget(self_playlist_separator)
+
+        #Output Layout
+        self.outputLayout = QtGui.QVBoxLayout(Dialog)
+        self.outputLabel = QtGui.QLabel(Dialog)
+        self.outputLabel.setText("Output")
+
+        self.fileLayout = QtGui.QHBoxLayout(Dialog)
         self.outputPathText = QtGui.QLineEdit()
-        self.outputPathText.setPlaceholderText("Save location...")
+        self.outputPathText.setPlaceholderText("Enter destination folder ")
+        self.outputPathText.setToolTip('Use default destination folder B:\Ark2Depot\MyPlaylists or enter a new one')
         self.outputDialogBtn = QtGui.QPushButton()
-        self.outputDialogBtn.setText("...")
-        self.outputLayout.addWidget(self.outputPathText)
-        self.outputLayout.addWidget(self.outputDialogBtn)
+        self.outputDialogBtn.setText("Select a folder")
+        self.outputDialogBtn.setToolTip('Override default or entered destination folder')
+        self.fileLayout.addWidget(self.outputPathText)
+        self.fileLayout.addWidget(self.outputDialogBtn)
+
+        self.outputLayout.addWidget(self.outputLabel)
+        self.outputLayout.addLayout(self.fileLayout)
         self.verticalLayout.addLayout(self.outputLayout)
 
-        # self.packageButton = QtGui.QPushButton()
-        # self.packageButton.setText("OPEN")
-        # self.verticalLayout.addWidget(self.packageButton)
+        # Output Layout
+        self.optionsLayout = QtGui.QHBoxLayout(Dialog)
+        self.destinationFolder = QtGui.QCheckBox()
+        self.destinationFolder.setText("Open destination folder")
+        self.destinationFolder.setToolTip('If checked, destination folder will be opened as soon as you click on \"Package Files\" button below')
+        self.destinationFolder.setChecked(True)
 
         self.compress = QtGui.QCheckBox()
         self.compress.setText("Zip files once complete")
-        self.compress.setChecked(True)
-        self.verticalLayout.addWidget(self.compress)
+        self.compress.setToolTip('If checked, destination folder will be zipped once all playlist files have been copied or downloaded to destination folder')
+        #self.compress.setChecked(True)
+        self.compress.setChecked(False)
 
-        # package button
+        self.optionsLayout.addWidget(self.destinationFolder)
+        self.optionsLayout.addWidget(self.compress)
+
+        self.verticalLayout.addLayout(self.optionsLayout)
+
+        # Package Layout
+        self.packageLayout = QtGui.QVBoxLayout(Dialog)
+        self.packageLayout.layout().setContentsMargins(0, 0, 0, 25)
         self.packageButton = QtGui.QPushButton()
-        self.packageButton.setText("PACKAGE")
-        self.verticalLayout.addWidget(self.packageButton)
+        self.packageButton.setText("Package Files")
+        self.packageButton.setToolTip('Copy or download playlist files to the destination folder. Check above if you want to open or zip destination folder.')
+        self.packageLayout.addWidget(self.packageButton)
+        self.verticalLayout.addLayout(self.packageLayout)
+
+        # Status Layout
+        self.statusLayout = QtGui.QVBoxLayout(Dialog)
+        self.statusLayout.layout().setContentsMargins(0, 0, 0, 10)
+        self.progressLabel = QtGui.QLabel(Dialog)
+        self.progressLabel.setText("Progress")
+
+        self.status_dialog = QtWidgets.QTextBrowser(Dialog)
+        self.status_dialog.verticalScrollBar().setValue(self.status_dialog.verticalScrollBar().maximum())
+        self.status_dialog.setMinimumHeight(200)
+
+        self.statusLayout.addWidget(self.progressLabel)
+        self.statusLayout.addWidget(self.status_dialog)
+        self.verticalLayout.addLayout(self.statusLayout)
+
+        # Progress Layout
+        self.progressLayout = QtGui.QVBoxLayout(Dialog)
+        self.progressLayout.layout().setContentsMargins(0, 0, 0, 20)
+
+        self.FilesProgressBar = QtGui.QProgressBar()
+        self.progressLayout.addWidget(self.FilesProgressBar)
+        """
+        self.FilesProgressBar.setStyleSheet(
+            '''
+            QWidget
+            {
+                color: #b1b1b1;
+                background-color: #323232;
+            }
+            QProgressBar
+            {
+                border: 2px solid grey;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk
+            {
+                background-color: #d7801a;
+                width: 2.15px;
+                margin: 0.5px;
+            }
+            
+            '''
+        )
+        """
+
+        #self.progress.setGeometry(200, 80, 250, 20)
+
+        self.verticalLayout.addLayout(self.progressLayout)
+
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(QtGui.QApplication.translate("Dialog", "The Current Sgtk Environment", None, QtGui.QApplication.UnicodeUTF8))
-        self.context.setText(QtGui.QApplication.translate("Dialog", "Your Current Context: ", None, QtGui.QApplication.UnicodeUTF8))
+        #self.context.setText(QtGui.QApplication.translate("Dialog", "Your Current Context: ", None, QtGui.QApplication.UnicodeUTF8))
+
 
 from . import resources_rc
